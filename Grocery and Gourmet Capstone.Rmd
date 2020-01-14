@@ -1,0 +1,138 @@
+---
+title: "Capstone"
+author: "Anupam Verma"
+date: "1/4/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Setting Directory and Loading Required Libraries
+```{r}
+setwd("C:\\Users\\anupverma\\Desktop\\GLL-BABI\\Capstone\\Datasets")
+#install.packages("jsonlite")
+library(jsonlite)
+library(dplyr)
+library(ggplot2)
+```
+
+
+#Read Grocery and Gourmet Review Data
+```{r}
+reviewdata=stream_in(file("C:\\Users\\anupverma\\Desktop\\GLL-BABI\\Capstone\\Datasets\\Grocery_and_Gourmet_Food_5\\Grocery_and_Gourmet_Food_5.json"))
+
+reviewdata_flat = flatten(reviewdata)
+str (reviewdata_flat)
+library(tibble)
+reviewdata_tbl=as_data_frame(reviewdata_flat)
+reviewdata_tbl
+view(head(reviewdata_tbl))
+```
+#PART -2 Read Review Full Data
+```{r}
+#fullreviewdata=stream_in(file("C:\\Users\\anupverma\\Desktop\\GLL-BABI\\Capstone\\Datasets\\Full_Grocery_and_Gourmet\\Grocery_and_Gourmet_Food.json"))
+
+#fullreviewdata_flat = flatten(fullreviewdata)
+#str (fullreviewdata_flat)
+#library(tibble)
+#fullreviewdata_tbl=as_data_frame(fullreviewdata_flat)
+#fullreviewdata_tbl
+#view(head(fullreviewdata_tbl))
+```
+
+#Reading Metadata
+```{r}
+metadata=stream_in(file("C:\\Users\\anupverma\\Desktop\\GLL-BABI\\Capstone\\Datasets\\meta_Grocery_and_Gourmet_Food\\meta_Grocery_and_Gourmet_Food.json"))
+metadata_flat = flatten(metadata)
+str (metadata_flat)
+library(tibble)
+metadata_tbl=as_data_frame(metadata_flat)
+metadata_tbl
+view(head(metadata_tbl))
+```
+
+#Data Cleaning and EDA
+#Converting the data type of 'Review_Time' column in the Dataframe 'dataset' to datetime format.
+```{r}
+month=substr(reviewdata_tbl$reviewTime,1,2)
+month
+date=substr(reviewdata_tbl$reviewTime,4,5)
+date
+date=gsub(",", "", date, fixed=TRUE)
+year=substr(reviewdata_tbl$reviewTime,7,11)
+
+library(stringr)
+year=str_trim(year, side = c("both", "left", "right"))
+newdate=paste(year,month,date,sep = "-")
+newdate
+
+newdate=as.Date(newdate,format="%Y-%m-%d")
+str(newdate)
+```
+#Removing Unnecessary columns
+```{r}
+View(head(reviewdata_tbl))
+reviewdata_tbl=reviewdata_tbl[-c(11:29)]
+
+```
+#Merging New Date field to Existing Dataframe
+
+```{r}
+reviewdata_tbl$newreviewtime=newdate
+reviewdata_tbl$newyear=year
+reviewdata_tbl$newmonth=month
+reviewdata_tbl$newdate=date
+```
+
+#NUMBER OF REVIEWS OVER THE YEARS
+#Grouping by year and taking the count of reviews for each year.
+```{r}
+yearly=reviewdata_tbl %>%select(newyear) %>% group_by(newyear) %>% summarise(count=n())
+yearly=as.data.frame(yearly)
+library(ggplot2)
+ggplot(mapping=aes(x=yearly$newyear,y=yearly$count,group = 1))+geom_path()
+#ggplot(data=yearly,aes(x=newyear,y=yearly$count))+geom_bar(data=yearly,stat = "count",position = "stack",stat_count("identity"))+geom_text(stat='count', aes(mapping=yearly$count), vjust=-1)
+
+head(yearly)
+```
+#NUMBER OF REVIEWS BY MONTH
+#Grouping on Month and getting the count
+```{r}
+monthly=reviewdata_tbl %>%select(newmonth) %>% group_by(newmonth) %>% summarise(count=n())
+monthly=as.data.frame(monthly)
+monthly
+library(ggplot2)
+ggplot(mapping=aes(x=monthly$newmonth,y=monthly$count,group=1))+geom_path()
+```
+#DISTRIBUTION OF OVERALL RATING FOR 'Grocery and Gourmet' CATEGORY REVIEWS ON AMAZON
+
+```{r}
+overall_rating=reviewdata_tbl %>%select(overall) %>% group_by(overall) %>% summarise(count=n())
+overall_rating=as.data.frame(overall_rating)
+overall_rating
+
+library(ggplot2)
+ggplot(mapping=aes(x=overall_rating$overall,y=overall_rating$count,group=1))+geom_line()
+#show Y as percentage
+#barplot(height = overall_rating$count,x=overall_rating$overall,y=overall_rating$count)
+ggplot(data = reviewdata_tbl, 
+         aes(x = reviewdata_tbl$overall)) + 
+    geom_histogram(aes(y = ..count../sum(as.numeric(..count..))*100),binwidth = 1)
+
+```
+#AVERAGE OVERALL RATINGS OVER THE YEARS
+```{r}
+Yearly_Avg_Rating=summarise(group_by(reviewdata_tbl$overall,reviewdata_tbl$NewYear_Fac),m=mean(reviewdata_tbl$overall))
+
+group_by(reviewdata_tbl$overall)
+
+reviewdata_tbl$NewYear_Fac=as.factor(reviewdata_tbl$newyear)
+?barplot()
+
+str(reviewdata_tbl)
+Yearly_Avg_Rating
+```
+
+
+
